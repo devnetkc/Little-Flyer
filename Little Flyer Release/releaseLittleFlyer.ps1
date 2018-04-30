@@ -3,11 +3,18 @@
 # Project: Little Flyer Automated Release
 #
 
-$curYr = Get-Date -format YYYY
-$curMon = Get-Date -format MMM
-$saveLoc = "C:\Users\ryan\OneDrive - cfm Distributors, Inc\_Website\Wordpress\cfm_live\images\Little Flyer\" + $curYr
-$workDir = "$($saveLoc)\workDir"
-$newDir = $saveLoc+$curMon
+$gDate = Get-Date
+$cYR = $gDate.ToString('yyyy')
+$cMON = $gDate.ToString('MMM')
+$saveLoc = 'C:\Users\ryan\OneDrive - cfm Distributors, Inc\_Website\Wordpress\cfm_live\images\Little Flyer\' + $cYR
+$workDir = $saveLoc+'\workDir'
+$newDir = $saveLoc + '\' + $cMON
+$copyFrom = $workDir + '\*' 
+If(!(test-path $newDir))
+    {
+        New-Item -ItemType directory -Force -Path $newDir
+    }
 
-Copy-Item "$($saveLoc)\*" $newDir
-dir $saveLoc | rename-item -NewName {$_.name -replace "$$$",$curMon}
+Copy-Item $copyFrom $newDir
+cd $newDir
+get-childitem | ForEach-Object { Move-Item -LiteralPath $_.name $_.name.Replace('$$$',"$cMON")}
