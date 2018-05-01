@@ -20,6 +20,7 @@
 	catch {
 		myErrorMessage("Check date variables")
 	}
+	Write-Output "Date variables have been set."
 
 	# determin which month to work with based on workflow needs and set the month variables
 	try {
@@ -47,6 +48,8 @@
     catch {
         myErrorMessage("Error setting the workflow month and year required")
     }
+	Write-Output "Working year value set as $workflowYear"
+	Write-Output "Working Month value set as $workflowMonth"	
 
 # Setting our script home path variable
 	try {
@@ -56,6 +59,8 @@
 	catch {
 		myErrorMessage("Error setting home path variables")
 	}
+	Write-Output "Script path set."
+
 # Setting our PDF home path variables
 	try {
 		# PDF Directories
@@ -65,6 +70,7 @@
 	catch {
 		myErrorMessage("Error setting PDF home path variables")
 	}
+	Write-Output "PDF directories set."
 # Setting our output home path variables
 	# Set output path year variable and create directory
 	try {
@@ -94,4 +100,80 @@
 	catch {
 		myErrorMessage("Error setting workflow month home path variable")
 	}
+	Write-Output "Workflow month path set."
 
+# Begin process of photoshop work
+	Write-Output "Starting pdf copy process for month."
+
+	# Ask for PSD filename to copy to PDF work directory
+	Function Get-FileName($initialDirectory)
+		{
+			[System.Reflection.Assembly]::LoadWithPartialName("System.windows.forms") | Out-Null
+    
+			$OpenFileDialog = New-Object System.Windows.Forms.OpenFileDialog
+			$OpenFileDialog.initialDirectory = $initialDirectory
+			$OpenFileDialog.filter = "Pdf Files|*.pdf|All files (*.*)|*.*"
+			$OpenFileDialog.ShowDialog() | Out-Null
+			$OpenFileDialog.filename
+		}
+	try {
+        Write-Output "To start, select monthly PDF copy."
+        pause
+		$initialPdfFile = Get-FileName $scriptPath
+		}
+	catch {
+		myErrorMessage("Error getting the monthly pdf file to start copying")
+	}
+
+	# Copy the monthly pdf file to work file
+
+		Write-Output "Copying pdf file to work directory."
+		$pdfWorkFile = '$$$$_LF_Hi.pdf'
+		try {
+			Copy-Item -Path $initialPdfFile -Destination "$pdfWorkDirectory\$pdfWorkFile" -Force
+		}
+		catch {
+			myErrorMessage("Error copying the monthly pdf file to work directory")
+		}
+
+	# Alert user to open photoshop and export files
+	Write-Output "Open Photoshop and export Little Flyer images to work directory.  Press any key to continue once work files have been successfully exported."
+	pause
+
+	
+	# Perform photoshop tasks
+
+	$photoshopWork = "Begin Photoshop image resize process for full size files",
+		"Begin Photoshop image resize process for min files"
+	$onMin = $false
+	Foreach ($step in $photoshopWork)
+	{
+		Write-Output $step
+		pause
+		Write-Output "Copying files"
+
+		# Copy the files exported to appropriate directory
+			Get-ChildItem -Path $pdfWorkDirectory -Filter "*.jpg" | ForEach-Object {
+				Copy-Item -Destination "$workflowMonthDirectory"
+			}
+
+		# Rename the files
+			if ($onMin -eq $true) {
+				$files = Get-ChildItem -Path $workflowMonthDirectory -Exclude "*$workflowYear*"
+			} else {
+				$files = Get-ChildItem -Path $workflowMonthDirectory -Exclude "*min*"
+			}
+			foreach ($file in $files) 
+			{
+				$curFileName = $file.Name
+				if ($onMin -eq $false) {
+					$newFileName=$file.Name.Replace($curFileName,"LF-$workflowMonth-$workflowYear-$curFileName")
+				} else {
+					$newFileName=$file.Name.Replace($curFileName,"LF-$workflowMonth-$workflowYear-$curFileName-min")
+				}
+				Rename-Item $file $newFileName
+			}
+		if ($onMin -eq $false) {
+			$onMin = $true
+		}
+	}
