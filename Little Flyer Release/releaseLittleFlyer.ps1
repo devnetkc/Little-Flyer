@@ -154,7 +154,7 @@
 
 		# Copy the files exported to appropriate directory
 			Get-ChildItem -Path $pdfWorkDirectory -Filter "*.jpg" | ForEach-Object {
-				Copy-Item -Destination "$workflowMonthDirectory"
+				Copy-Item $_.FullName -Destination $workflowMonthDirectory
 			}
 
 		# Rename the files
@@ -165,15 +165,41 @@
 			}
 			foreach ($file in $files) 
 			{
-				$curFileName = $file.Name
+				$curFileName = $file.BaseName
+				$curFileExt = $files.Extension
 				if ($onMin -eq $false) {
 					$newFileName=$file.Name.Replace($curFileName,"LF-$workflowMonth-$workflowYear-$curFileName")
 				} else {
 					$newFileName=$file.Name.Replace($curFileName,"LF-$workflowMonth-$workflowYear-$curFileName-min")
 				}
 				Rename-Item $file $newFileName
+				$curFileName = ""
+				$curFileExt = ""
 			}
 		if ($onMin -eq $false) {
 			$onMin = $true
 		}
 	}
+
+	# Work complete.  If no errors, ask if the user wants the file opened and to visit tinypng where we compress the image files.
+
+	if (!$Error) {
+		$openSaveLocation = $popup.Popup("Work completed without any errors detected.'n'nWould you like to open the directory in explorer?",0,"Completed Successfully!",4)
+		if ($openSaveLocation -eq 6) {
+			start https://tinypng.com
+			ii $workflowMonthDirectory
+		} else {
+			exit
+		}
+	}
+
+
+# Catch errors and report their message
+function myErrorMessage {
+    param( [string]$myErrMsg )
+    if ( $popup.Popup("Houston, we have an error: $myErrMsg.  Should I stop?",0,"Error Detected",4) -eq 6 ) {
+        exit
+    } else {
+		$error.clear()
+    }
+}
