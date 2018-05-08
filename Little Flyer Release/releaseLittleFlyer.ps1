@@ -153,28 +153,43 @@
 		Write-Output "Copying files"
 
 		# Copy the files exported to appropriate directory
-			Get-ChildItem -Path $pdfWorkDirectory -Filter "*.jpg" | ForEach-Object {
+			try {
+				Get-ChildItem -Path $pdfWorkDirectory -Filter "*.jpg" | ForEach-Object {
 				Copy-Item $_.FullName -Destination $workflowMonthDirectory
+				}
+			}
+			catch {
+				myErrorMessage("Error copying image to month workflow directory")
 			}
 
 		# Rename the files
-			if ($onMin -eq $true) {
-				$files = Get-ChildItem -Path $workflowMonthDirectory -Exclude "*$workflowYear*"
-			} else {
-				$files = Get-ChildItem -Path $workflowMonthDirectory -Exclude "*min*"
+			try {
+				if ($onMin -eq $true) {
+					$files = Get-ChildItem -Path $workflowMonthDirectory -Exclude "*$workflowYear*"
+				} else {
+					$files = Get-ChildItem -Path $workflowMonthDirectory -Exclude "*min*"
+				}
+			}
+			catch {
+				myErrorMessage("Error getting image items in workflow month directory")
 			}
 			foreach ($file in $files) 
 			{
-				$curFileName = $file.BaseName
-				$curFileExt = $files.Extension
-				if ($onMin -eq $false) {
-					$newFileName=$file.Name.Replace($curFileName,"LF-$workflowMonth-$workflowYear-$curFileName")
-				} else {
-					$newFileName=$file.Name.Replace($curFileName,"LF-$workflowMonth-$workflowYear-$curFileName-min")
+				try {
+					$curFileName = $file.BaseName
+					$curFileExt = $files.Extension
+					if ($onMin -eq $false) {
+						$newFileName=$file.Name.Replace($curFileName,"LF-$workflowMonth-$workflowYear-$curFileName")
+					} else {
+						$newFileName=$file.Name.Replace($curFileName,"LF-$workflowMonth-$workflowYear-$curFileName-min")
+					}
+					Rename-Item $file $newFileName
+					$curFileName = ""
+					$curFileExt = ""
 				}
-				Rename-Item $file $newFileName
-				$curFileName = ""
-				$curFileExt = ""
+				catch {
+					myErrorMessage("Error renaming files")
+				}
 			}
 		if ($onMin -eq $false) {
 			$onMin = $true
